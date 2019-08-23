@@ -1,0 +1,7 @@
+apiVersion: plunder.cluster.k8s.io/v1alpha1
+kind: PlunderMachine
+metadata:
+  name: plundermachine-sample
+spec:
+  # Add fields here
+  foo: bar
