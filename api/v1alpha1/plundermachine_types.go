@@ -20,19 +20,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// MachineFinalizer allows the reconciler to clean up resources associated with PlunderMachine before
+	// removing it from the apiserver.
+	MachineFinalizer = "plundernmachine.infrastructure.cluster.x-k8s.io"
+)
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // PlunderMachineSpec defines the desired state of PlunderMachine
 type PlunderMachineSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// ProviderID will be the only detail (todo: something else)
+	// +optional
+	ProviderID *string `json:"providerID,omitempty"`
+
+	// ControlPlaneMac will be a pool of mac addresses for control plane nodes
+	// +optional
+	ControlPlaneMacPool []string `json:"controlPlaneMacPool,omitempty"`
 }
 
 // PlunderMachineStatus defines the observed state of PlunderMachine
 type PlunderMachineStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Ready denotes that the machine is ready
+	Ready bool `json:"ready"`
 }
 
 // +kubebuilder:object:root=true

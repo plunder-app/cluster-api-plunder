@@ -20,6 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// ClusterFinalizer allows Reconciler to clean up resources associated with PlunderCluster before
+	// removing it from the apiserver.
+	ClusterFinalizer = "plundercluster.infrastructure.cluster.x-k8s.io"
+)
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -27,12 +33,31 @@ import (
 type PlunderClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// StaticMAC denotes that the machine is ready
+	StaticMAC string `json:"staticMAC,omitempty"`
+
+	// StaticIp denotes that the machine is ready
+	StaticIp string `json:"staticIP,omitempty"`
 }
 
 // PlunderClusterStatus defines the observed state of PlunderCluster
 type PlunderClusterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Ready denotes that the machine is ready
+	Ready bool `json:"ready"`
+
+	// APIEndpoints represents the endpoints to communicate with the control plane.
+	// +optional
+	APIEndpoints []APIEndpoint `json:"apiEndpoints,omitempty"`
+}
+
+// APIEndpoint represents a reachable Kubernetes API endpoint.
+type APIEndpoint struct {
+	// Host is the hostname on which the API server is serving.
+	Host string `json:"host"`
+
+	// Port is the port on which the API server is serving.
+	Port int `json:"port"`
 }
 
 // +kubebuilder:object:root=true

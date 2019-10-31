@@ -2,8 +2,8 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/plunder.cluster.k8s.io_plunderclusters.yaml
-- bases/plunder.cluster.k8s.io_plundermachines.yaml
+- bases/infrastructure.cluster.x-k8s.io_plunderclusters.yaml
+- bases/infrastructure.cluster.x-k8s.io_plundermachines.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

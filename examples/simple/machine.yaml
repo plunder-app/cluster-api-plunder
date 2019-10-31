@@ -1,0 +1,46 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: PlunderMachine
+metadata:
+  name: controlplane
+  namespace: default
+---
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: Machine
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: cluster-plunder
+    cluster.x-k8s.io/control-plane: "true"
+  name: controlplane
+  namespace: default
+spec:
+  version: "v1.14.2"
+  bootstrap:
+    data: ""
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: PlunderMachine
+    name: controlplane
+    namespace: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: PlunderMachine
+metadata:
+  name: worker
+  namespace: default
+---
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: Machine
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: cluster-plunder
+  name: worker
+  namespace: default
+spec:
+  version: "v1.14.2"
+  bootstrap:
+    data: ""
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: PlunderMachine
+    name: worker
+    namespace: default

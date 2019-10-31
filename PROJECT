@@ -1,10 +1,10 @@
 version: "2"
-domain: cluster.k8s.io
+domain: cluster.x-k8s.io
 repo: github.com/plunder-app/cluster-api-provider-plunder
 resources:
-- group: plunder
+- group: infrastructure
   version: v1alpha1
   kind: PlunderCluster
-- group: plunder
+- group: infrastructure
   version: v1alpha1
   kind: PlunderMachine
