@@ -99,18 +99,21 @@ func (r *PlunderClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *PlunderClusterReconciler) reconcileCluster(logger logr.Logger, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (ctrl.Result, error) {
 	logger.Info("Reconciling Cluster")
+
 	if !util.Contains(plunderCluster.Finalizers, infrav1.ClusterFinalizer) {
 		plunderCluster.Finalizers = append(plunderCluster.Finalizers, infrav1.ClusterFinalizer)
 	}
 
-	plunderCluster.Status.APIEndpoints = []infrav1.APIEndpoint{
-		{
-			Host: "192.168.0.1",
-			Port: 6443,
-		},
-	}
+	// With plunder at the moment there is nothing that can be done throught he server component
+
+	// plunderCluster.Status.APIEndpoints = []infrav1.APIEndpoint{
+	// 	{
+	// 		Host: "192.168.0.1",
+	// 		Port: 6443,
+	// 	},
+	// }
 	// Deploy a new cluster
-	clusterDeploy(plunderCluster)
+	//clusterDeploy(plunderCluster)
 
 	plunderCluster.Status.Ready = true
 	return ctrl.Result{}, nil
