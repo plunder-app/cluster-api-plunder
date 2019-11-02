@@ -44,6 +44,11 @@ type PlunderMachineSpec struct {
 type PlunderMachineStatus struct {
 	// Ready denotes that the machine is ready
 	Ready bool `json:"ready"`
+
+	// IPAdress is the allocated networking address
+	IPAdress string `json:"ipaddress,omitempty"`
+	// MACAddress is the physical network address of the machine
+	MACAddress string `json:"macaddress,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -20,6 +20,8 @@ import (
 	"flag"
 	"os"
 
+	"github.com/plunder-app/cluster-api-provider-plunder/pkg/record"
+
 	infrastructurev1alpha1 "github.com/plunder-app/cluster-api-provider-plunder/api/v1alpha1"
 	"github.com/plunder-app/cluster-api-provider-plunder/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -66,6 +68,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize event recorder.
+	record.InitFromRecorder(mgr.GetEventRecorderFor("plunder-controller"))
+
 	if err = (&controllers.PlunderClusterReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("PlunderCluster"),
@@ -74,8 +79,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.PlunderMachineReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("PlunderMachine"),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("PlunderMachine"),
+		Recorder: mgr.GetEventRecorderFor("plunder-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PlunderMachine")
 		os.Exit(1)

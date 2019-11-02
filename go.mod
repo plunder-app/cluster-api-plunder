@@ -17,6 +17,7 @@ require (
 	github.com/plunder-app/plunder/pkg/utils v0.0.0-00010101000000-000000000000
 	github.com/thebsdbox/go-tftp v0.0.0-20190329154032-a7263f18c49c // indirect
 	github.com/whyrusleeping/go-tftp v0.0.0-20180830013254-3695fa5761ee // indirect
+	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
 	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
 	k8s.io/client-go v0.0.0-20190918200256-06eb1244587a
 	k8s.io/klog v0.4.0
