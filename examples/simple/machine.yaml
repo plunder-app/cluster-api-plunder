@@ -3,6 +3,8 @@ kind: PlunderMachine
 metadata:
   name: controlplane
   namespace: default
+spec:
+  ipaddress: 192.168.1.123
 ---
 apiVersion: cluster.x-k8s.io/v1alpha2
 kind: Machine
@@ -27,6 +29,8 @@ kind: PlunderMachine
 metadata:
   name: worker
   namespace: default
+spec:
+  ipaddress: 192.168.1.124
 ---
 apiVersion: cluster.x-k8s.io/v1alpha2
 kind: Machine

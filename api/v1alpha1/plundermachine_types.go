@@ -38,6 +38,14 @@ type PlunderMachineSpec struct {
 	// ControlPlaneMac will be a pool of mac addresses for control plane nodes
 	// +optional
 	ControlPlaneMacPool []string `json:"controlPlaneMacPool,omitempty"`
+
+	// MACHINE Definition
+
+	// IPAdress is the address to be used IF IPAM isn't enabled (SPOILER IT ISN'T as i've not written it yet)
+	IPAdress *string `json:"ipaddress,omitempty"`
+
+	// MACAddress is the physical network address of the if we don't auto detect
+	MACAddress *string `json:"macaddress,omitempty"`
 }
 
 // PlunderMachineStatus defines the observed state of PlunderMachine
