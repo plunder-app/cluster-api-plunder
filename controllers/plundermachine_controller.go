@@ -208,9 +208,13 @@ func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *cl
 	d := services.DeploymentConfig{
 		ConfigName: "preseed",
 		MAC:        installMAC,
-		ConfigHost: services.HostConfig{
-			IPAddress: "192.168.1.123",
-		},
+		ConfigHost: services.HostConfig{},
+	}
+
+	if plunderMachine.Spec.IPAdress != nil {
+		d.ConfigHost.IPAddress = *plunderMachine.Spec.IPAdress
+	} else {
+		// TODO (EPIC) implement IPAM
 	}
 
 	//Check the role of the machine
@@ -356,19 +360,23 @@ func (r *PlunderMachineReconciler) reconcileMachineDelete(logger logr.Logger, ma
 
 	// Set Parlay API path and POST
 	ep, resp := apiserver.FindFunctionEndpoint(u, c, "parlay", http.MethodPost)
-	if resp.Error != "" {
-		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
+	if resp.Error != "" || resp.FriendlyError != "" {
+		return ctrl.Result{}, fmt.Errorf(resp.FriendlyError)
 	}
+
 	u.Path = ep.Path
 	response, err := apiserver.ParsePlunderPost(u, c, b)
 	if err != nil {
-		return ctrl.Result{}, err
+
+		return ctrl.Result{}, fmt.Errorf(response.Error)
 	}
 
 	// If an error has been returned then handle the error gracefully and terminate
 	if response.FriendlyError != "" || response.Error != "" {
-		return ctrl.Result{}, fmt.Errorf(resp.Error)
+		// TODO - if this error occurs it's because the machine doesn't exist
+		plunderMachine.Finalizers = util.Filter(plunderMachine.Finalizers, infrav1.MachineFinalizer)
+		logger.Info(fmt.Sprintf("Removing Machine [%s] from config, it may need removing manually", plunderMachine.Name))
+		return ctrl.Result{}, fmt.Errorf(resp.FriendlyError)
 
 	}
 
