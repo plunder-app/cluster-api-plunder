@@ -160,16 +160,11 @@ worker         plunder://00:50:56:a5:11:20   provisioned
 ```
 k get events
 LAST SEEN   TYPE      REASON              OBJECT                        MESSAGE
-41m         Warning   No Hardware found   plundermachine/controlplane   Plunder has no available hardware to provision
-41m         Normal    PlunderProvision    plundermachine/controlplane   Plunder has begun provisioning the Operating System
-34m         Normal    PlunderProvision    plundermachine/controlplane   Host has been succesfully provisioned OS in 6m56s Seconds
-9m40s       Warning   No Hardware found   plundermachine/controlplane   Plunder has no available hardware to provision
-7m4s        Normal    PlunderProvision    plundermachine/controlplane   Plunder has begun provisioning the Operating System
-3s          Normal    PlunderProvision    plundermachine/controlplane   Host has been succesfully provisioned OS in 7m1s Seconds
-31m         Warning   No Hardware found   plundermachine/worker         Plunder has no available hardware to provision
-16m         Normal    PlunderProvision    plundermachine/worker         Plunder has begun provisioning the Operating System
-9m58s       Normal    PlunderProvision    plundermachine/worker         Host has been succesfully provisioned OS in 7m1s Seconds
-2s          Normal    PlunderProvision    plundermachine/worker         Plunder has begun provisioning the Operating System
+50m         Warning   No Hardware found   plundermachine/controlplane   Plunder has no available hardware to provision
+47m         Normal    PlunderProvision    plundermachine/controlplane   Plunder has begun provisioning the Operating System
+40m         Normal    PlunderProvision    plundermachine/controlplane   Host has been succesfully provisioned OS in 7m1s Seconds
+40m         Normal    PlunderProvision    plundermachine/worker         Plunder has begun provisioning the Operating System
+33m         Normal    PlunderProvision    plundermachine/worker         Host has been succesfully provisioned OS in 7m6s Seconds
 ```
 
 ## Deleting Machines
