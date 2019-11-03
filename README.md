@@ -145,6 +145,14 @@ k get machines
 NAME           PROVIDERID   PHASE
 controlplane                provisioning
 worker                      provisioning
+
+< 7-ish mins later>
+
+k get machines
+NAME           PROVIDERID                    PHASE
+controlplane   plunder://00:50:56:a5:b5:f1   provisioned
+worker         plunder://00:50:56:a5:11:20   provisioned
+
 ```
 
 #### Machine Events
