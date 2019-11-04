@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 	"time"
 
@@ -36,7 +35,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "github.com/plunder-app/cluster-api-provider-plunder/api/v1alpha1"
+	"github.com/plunder-app/cluster-api-plunder/pkg/plunder"
+	infrav1 "github.com/plunder-app/cluster-api-plunder/api/v1alpha1"
 	"github.com/plunder-app/plunder/pkg/apiserver"
 	"github.com/plunder-app/plunder/pkg/parlay/parlaytypes"
 	"github.com/plunder-app/plunder/pkg/plunderlogging"
@@ -60,6 +60,15 @@ func (r *PlunderMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 	log := r.Log.WithValues("plundermachine", req.NamespacedName)
 
 	// your Plunder Machine logic begins here
+
+	// Attempt to speak with the provisionign (plunder) server
+	// TODO - may need moving lower
+	client, err := plunder.NewClient()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// We can speak with the plunder server, we can now evaluate the changes
 
 	// Fetch the inceptionmachine instance.
 	plunderMachine := &infrav1.PlunderMachine{}
@@ -129,7 +138,7 @@ func (r *PlunderMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcileMachine(log, machine, plunderMachine, cluster, plunderCluster)
+	return r.reconcileMachine(client, log, machine, plunderMachine, cluster, plunderCluster)
 }
 
 func (r *PlunderMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -138,15 +147,12 @@ func (r *PlunderMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
+func (r *PlunderMachineReconciler) reconcileMachine(client plunder.Client, log logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
 	log.Info("Reconciling Machine")
 	// If the DockerMachine doesn't have finalizer, add it.
 	if !util.Contains(plunderMachine.Finalizers, infrav1.MachineFinalizer) {
 		plunderMachine.Finalizers = append(plunderMachine.Finalizers, infrav1.MachineFinalizer)
 	}
-
-	// Immeditaly give it the details it needs
-	//	providerID := "inception:////inception"
 
 	// if the machine is already provisioned, return
 	if plunderMachine.Spec.ProviderID != nil {
@@ -160,50 +166,15 @@ func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *cl
 		log.Info("The Plunder Provider currently doesn't require bootstrap data")
 	}
 
-	var installMAC string
-
-	// Find a machine for provisioning
-	u, c, err := apiserver.BuildEnvironmentFromConfig("plunderclient.yaml", "")
+	installMAC, err := client.FindMachine()
 	if err != nil {
-		return ctrl.Result{}, err
-	}
-	ep, resp := apiserver.FindFunctionEndpoint(u, c, "dhcp", http.MethodGet)
-	if resp.Error != "" {
-		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	}
-
-	u.Path = path.Join(u.Path, ep.Path+"/unleased")
-
-	response, err := apiserver.ParsePlunderGet(u, c)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	// If an error has been returned then handle the error gracefully and terminate
-	if response.FriendlyError != "" || response.Error != "" {
-		return ctrl.Result{}, err
-	}
-	var unleased []services.Lease
-
-	err = json.Unmarshal(response.Payload, &unleased)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Iterate through all known addresses and find a free one that looks "recent"
-	for i := range unleased {
-		if time.Since(unleased[i].Expiry).Minutes() < 10 {
-			installMAC = unleased[i].Nic
-		}
-	}
-
-	// Hopefully we found one!
-	if installMAC == "" {
 		r.Recorder.Eventf(plunderMachine, corev1.EventTypeWarning, "No Hardware found", "Plunder has no available hardware to provision")
-		return ctrl.Result{}, fmt.Errorf("No free hardware for provisioning")
-	}
+		return ctrl.Result{}, err
+	 
 
 	log.Info(fmt.Sprintf("Found Hardware %s", installMAC))
+
+	client.ProvisionMachine(plunderMachine.Name, plunderMachine.Spec.IPAdress, plunderMachine.Spec.MACAddress, "preseed")
 
 	d := services.DeploymentConfig{
 		ConfigName: "preseed",
@@ -342,7 +313,7 @@ func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *cl
 
 }
 
-func (r *PlunderMachineReconciler) reconcileMachineDelete(logger logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
+func (r *PlunderMachineReconciler) reconcileMachineDelete(client plunder.Client, logger logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
 	logger.Info(fmt.Sprintf("Deleting Machine %s", plunderMachine.Name))
 
 	u, c, err := apiserver.BuildEnvironmentFromConfig("plunderclient.yaml", "")
