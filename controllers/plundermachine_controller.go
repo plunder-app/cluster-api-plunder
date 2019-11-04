@@ -159,13 +159,15 @@ func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log 
 		log.Info("The Plunder Provider currently doesn't require bootstrap data")
 	}
 
-	installMAC, err := client.FindMachine()
-	if err != nil {
-		r.Recorder.Eventf(plunderMachine, corev1.EventTypeWarning, "No Hardware found", "Plunder has no available hardware to provision")
-		return ctrl.Result{}, err
+	if *plunderMachine.Spec.MACAddress == "" {
+		installMAC, err := client.FindMachine()
+		if err != nil {
+			r.Recorder.Eventf(plunderMachine, corev1.EventTypeWarning, "No Hardware found", "Plunder has no available hardware to provision")
+			return ctrl.Result{}, err
+		}
+		plunderMachine.Spec.MACAddress = &installMAC
 	}
-
-	log.Info(fmt.Sprintf("Found Hardware %s", installMAC))
+	log.Info(fmt.Sprintf("Found Hardware %s", *plunderMachine.Spec.MACAddress))
 
 	// 	//Check the role of the machine
 	if util.IsControlPlaneMachine(machine) {
@@ -177,7 +179,7 @@ func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log 
 		//d.ConfigHost.ServerName = fmt.Sprintf("worker-%s", StringWithCharset(5, charset))
 	}
 
-	err = client.ProvisionMachine(plunderMachine.Name, *plunderMachine.Spec.IPAdress, *plunderMachine.Spec.MACAddress, *plunderMachine.Spec.DeploymentType)
+	err := client.ProvisionMachine(plunderMachine.Name, *plunderMachine.Spec.IPAdress, *plunderMachine.Spec.MACAddress, *plunderMachine.Spec.DeploymentType)
 	if err != nil {
 		r.Recorder.Eventf(plunderMachine, corev1.EventTypeWarning, "PlunderProvision", "Plunder failed to deploy")
 		return ctrl.Result{}, err
@@ -191,13 +193,13 @@ func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log 
 
 	log.Info(*result)
 
-	providerID := fmt.Sprintf("plunder://%s", installMAC)
+	providerID := fmt.Sprintf("plunder://%s", *plunderMachine.Spec.MACAddress)
 
 	plunderMachine.Spec.ProviderID = &providerID
 	// Mark the inceptionMachine ready
 	plunderMachine.Status.Ready = true
 	// Set the object status
-	plunderMachine.Status.MACAddress = installMAC
+	plunderMachine.Status.MACAddress = *plunderMachine.Spec.MACAddress
 	plunderMachine.Status.IPAdress = *plunderMachine.Spec.IPAdress
 
 	// 	d := services.DeploymentConfig{
