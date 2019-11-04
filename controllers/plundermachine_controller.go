@@ -18,14 +18,11 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"strings"
-	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -35,12 +32,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/plunder-app/cluster-api-plunder/pkg/plunder"
 	infrav1 "github.com/plunder-app/cluster-api-plunder/api/v1alpha1"
-	"github.com/plunder-app/plunder/pkg/apiserver"
+	"github.com/plunder-app/cluster-api-plunder/pkg/plunder"
 	"github.com/plunder-app/plunder/pkg/parlay/parlaytypes"
-	"github.com/plunder-app/plunder/pkg/plunderlogging"
-	"github.com/plunder-app/plunder/pkg/services"
 )
 
 // PlunderMachineReconciler reconciles a PlunderMachine object
@@ -73,7 +67,7 @@ func (r *PlunderMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 	// Fetch the inceptionmachine instance.
 	plunderMachine := &infrav1.PlunderMachine{}
 
-	err := r.Get(ctx, req.NamespacedName, plunderMachine)
+	err = r.Get(ctx, req.NamespacedName, plunderMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -134,7 +128,7 @@ func (r *PlunderMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 
 	// Handle deleted clusters
 	if !plunderMachine.DeletionTimestamp.IsZero() {
-		return r.reconcileMachineDelete(log, machine, plunderMachine, cluster, plunderCluster)
+		return r.reconcileMachineDelete(client, log, machine, plunderMachine, cluster, plunderCluster)
 	}
 
 	// Handle non-deleted clusters
@@ -147,7 +141,7 @@ func (r *PlunderMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *PlunderMachineReconciler) reconcileMachine(client plunder.Client, log logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
+func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
 	log.Info("Reconciling Machine")
 	// If the DockerMachine doesn't have finalizer, add it.
 	if !util.Contains(plunderMachine.Finalizers, infrav1.MachineFinalizer) {
@@ -157,7 +151,6 @@ func (r *PlunderMachineReconciler) reconcileMachine(client plunder.Client, log l
 	// if the machine is already provisioned, return
 	if plunderMachine.Spec.ProviderID != nil {
 		plunderMachine.Status.Ready = true
-
 		return ctrl.Result{}, nil
 	}
 
@@ -170,135 +163,33 @@ func (r *PlunderMachineReconciler) reconcileMachine(client plunder.Client, log l
 	if err != nil {
 		r.Recorder.Eventf(plunderMachine, corev1.EventTypeWarning, "No Hardware found", "Plunder has no available hardware to provision")
 		return ctrl.Result{}, err
-	 
+	}
 
 	log.Info(fmt.Sprintf("Found Hardware %s", installMAC))
 
-	client.ProvisionMachine(plunderMachine.Name, plunderMachine.Spec.IPAdress, plunderMachine.Spec.MACAddress, "preseed")
-
-	d := services.DeploymentConfig{
-		ConfigName: "preseed",
-		MAC:        installMAC,
-		ConfigHost: services.HostConfig{},
-	}
-
-	if plunderMachine.Spec.IPAdress != nil {
-		d.ConfigHost.IPAddress = *plunderMachine.Spec.IPAdress
-	} else {
-		// TODO (EPIC) implement IPAM
-	}
-
-	//Check the role of the machine
+	// 	//Check the role of the machine
 	if util.IsControlPlaneMachine(machine) {
 		log.Info(fmt.Sprintf("Provisioning Control plane node %s", machine.Name))
-		d.ConfigHost.ServerName = fmt.Sprintf("controlplane-%s", StringWithCharset(5, charset))
+		//d.ConfigHost.ServerName = fmt.Sprintf("controlplane-%s", StringWithCharset(5, charset))
 
 	} else {
 		log.Info(fmt.Sprintf("Provisioning Worker node %s", machine.Name))
-		d.ConfigHost.ServerName = fmt.Sprintf("worker-%s", StringWithCharset(5, charset))
+		//d.ConfigHost.ServerName = fmt.Sprintf("worker-%s", StringWithCharset(5, charset))
 	}
 
-	ep, resp = apiserver.FindFunctionEndpoint(u, c, "deployment", http.MethodPost)
-	if resp.Error != "" {
-		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	}
-
-	u.Path = ep.Path
-
-	b, err := json.Marshal(d)
+	err = client.ProvisionMachine(plunderMachine.Name, *plunderMachine.Spec.IPAdress, *plunderMachine.Spec.MACAddress, *plunderMachine.Spec.DeploymentType)
 	if err != nil {
+		r.Recorder.Eventf(plunderMachine, corev1.EventTypeWarning, "PlunderProvision", "Plunder failed to deploy")
 		return ctrl.Result{}, err
 	}
-	response, err = apiserver.ParsePlunderPost(u, c, b)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	// If an error has been returned then handle the error gracefully and terminate
-	if response.FriendlyError != "" || response.Error != "" {
-		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	}
-
-	newMap := uptimeCommand(d.ConfigHost.IPAddress)
-
-	// Marshall the parlay submission (runs the uptime command)
-	b, err = json.Marshal(newMap)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Create the string that will be used to get the logs
-	dashAddress := strings.Replace(d.ConfigHost.IPAddress, ".", "-", -1)
-
-	// Get the time
-	t := time.Now()
 	r.Recorder.Eventf(plunderMachine, corev1.EventTypeNormal, "PlunderProvision", "Plunder has begun provisioning the Operating System")
 
-	for {
-		// Set Parlay API path and POST
-		ep, resp = apiserver.FindFunctionEndpoint(u, c, "parlay", http.MethodPost)
-		if resp.Error != "" {
-			return ctrl.Result{}, fmt.Errorf(resp.Error)
+	result, err := client.ProvisionMachineWait(*plunderMachine.Spec.IPAdress)
 
-		}
-		u.Path = ep.Path
+	// 	provisioningResult := fmt.Sprintf("Host has been succesfully provisioned OS in %s Seconds\n", time.Since(t).Round(time.Second))
+	r.Recorder.Eventf(plunderMachine, corev1.EventTypeNormal, "PlunderProvision", *result)
 
-		response, err := apiserver.ParsePlunderPost(u, c, b)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-
-		// If an error has been returned then handle the error gracefully and terminate
-		if response.FriendlyError != "" || response.Error != "" {
-			return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-		}
-
-		// Sleep for five seconds
-		time.Sleep(5 * time.Second)
-
-		// Set the parlay API get logs path and GET
-		ep, resp = apiserver.FindFunctionEndpoint(u, c, "parlayLog", http.MethodGet)
-		if resp.Error != "" {
-			return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-		}
-		u.Path = ep.Path + "/" + dashAddress
-
-		response, err = apiserver.ParsePlunderGet(u, c)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-		// If an error has been returned then handle the error gracefully and terminate
-		if response.FriendlyError != "" || response.Error != "" {
-			return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-		}
-
-		var logs plunderlogging.JSONLog
-
-		err = json.Unmarshal(response.Payload, &logs)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if logs.State == "Completed" {
-			provisioningResult := fmt.Sprintf("Host has been succesfully provisioned OS in %s Seconds\n", time.Since(t).Round(time.Second))
-			r.Recorder.Eventf(plunderMachine, corev1.EventTypeNormal, "PlunderProvision", provisioningResult)
-
-			log.Info(provisioningResult)
-			break
-		}
-	}
-
-	// TODO - Attempt to create the machine
-
-	// // if the machine is a control plane added, update the load balancer configuration
-	// if util.IsControlPlaneMachine(machine) {}
-
-	// DEPLOY THE MACHINE
-	//clusterDeploy(nil)
+	log.Info(*result)
 
 	providerID := fmt.Sprintf("plunder://%s", installMAC)
 
@@ -307,67 +198,203 @@ func (r *PlunderMachineReconciler) reconcileMachine(client plunder.Client, log l
 	plunderMachine.Status.Ready = true
 	// Set the object status
 	plunderMachine.Status.MACAddress = installMAC
-	plunderMachine.Status.IPAdress = d.ConfigHost.IPAddress
+	plunderMachine.Status.IPAdress = *plunderMachine.Spec.IPAdress
+
+	// 	d := services.DeploymentConfig{
+	// 		ConfigName: "preseed",
+	// 		MAC:        installMAC,
+	// 		ConfigHost: services.HostConfig{},
+	// 	}
+
+	// 	if plunderMachine.Spec.IPAdress != nil {
+	// 		d.ConfigHost.IPAddress = *plunderMachine.Spec.IPAdress
+	// 	} else {
+	// 		// TODO (EPIC) implement IPAM
+	// 	}
+
+	// 	ep, resp = apiserver.FindFunctionEndpoint(u, c, "deployment", http.MethodPost)
+	// 	if resp.Error != "" {
+	// 		return ctrl.Result{}, fmt.Errorf(resp.Error)
+
+	// 	}
+
+	// 	u.Path = ep.Path
+
+	// 	b, err := json.Marshal(d)
+	// 	if err != nil {
+	// 		return ctrl.Result{}, err
+	// 	}
+	// 	response, err = apiserver.ParsePlunderPost(u, c, b)
+	// 	if err != nil {
+	// 		return ctrl.Result{}, err
+	// 	}
+	// 	// If an error has been returned then handle the error gracefully and terminate
+	// 	if response.FriendlyError != "" || response.Error != "" {
+	// 		return ctrl.Result{}, fmt.Errorf(resp.Error)
+
+	// 	}
+
+	// 	newMap := uptimeCommand(d.ConfigHost.IPAddress)
+
+	// 	// Marshall the parlay submission (runs the uptime command)
+	// 	b, err = json.Marshal(newMap)
+	// 	if err != nil {
+	// 		return ctrl.Result{}, err
+	// 	}
+
+	// 	// Create the string that will be used to get the logs
+	// 	dashAddress := strings.Replace(d.ConfigHost.IPAddress, ".", "-", -1)
+
+	// 	// Get the time
+	// 	t := time.Now()
+	// r.Recorder.Eventf(plunderMachine, corev1.EventTypeNormal, "PlunderProvision", "Plunder has begun provisioning the Operating System")
+
+	// 	for {
+	// 		// Set Parlay API path and POST
+	// 		ep, resp = apiserver.FindFunctionEndpoint(u, c, "parlay", http.MethodPost)
+	// 		if resp.Error != "" {
+	// 			return ctrl.Result{}, fmt.Errorf(resp.Error)
+
+	// 		}
+	// 		u.Path = ep.Path
+
+	// 		response, err := apiserver.ParsePlunderPost(u, c, b)
+	// 		if err != nil {
+	// 			return ctrl.Result{}, err
+	// 		}
+
+	// 		// If an error has been returned then handle the error gracefully and terminate
+	// 		if response.FriendlyError != "" || response.Error != "" {
+	// 			return ctrl.Result{}, fmt.Errorf(resp.Error)
+
+	// 		}
+
+	// 		// Sleep for five seconds
+	// 		time.Sleep(5 * time.Second)
+
+	// 		// Set the parlay API get logs path and GET
+	// 		ep, resp = apiserver.FindFunctionEndpoint(u, c, "parlayLog", http.MethodGet)
+	// 		if resp.Error != "" {
+	// 			return ctrl.Result{}, fmt.Errorf(resp.Error)
+
+	// 		}
+	// 		u.Path = ep.Path + "/" + dashAddress
+
+	// 		response, err = apiserver.ParsePlunderGet(u, c)
+	// 		if err != nil {
+	// 			return ctrl.Result{}, err
+	// 		}
+	// 		// If an error has been returned then handle the error gracefully and terminate
+	// 		if response.FriendlyError != "" || response.Error != "" {
+	// 			return ctrl.Result{}, fmt.Errorf(resp.Error)
+
+	// 		}
+
+	// 		var logs plunderlogging.JSONLog
+
+	// 		err = json.Unmarshal(response.Payload, &logs)
+	// 		if err != nil {
+	// 			return ctrl.Result{}, err
+	// 		}
+
+	// 		if logs.State == "Completed" {
+	// 			provisioningResult := fmt.Sprintf("Host has been succesfully provisioned OS in %s Seconds\n", time.Since(t).Round(time.Second))
+	// 			r.Recorder.Eventf(plunderMachine, corev1.EventTypeNormal, "PlunderProvision", provisioningResult)
+
+	// 			log.Info(provisioningResult)
+	// 			break
+	// 		}
+	// 	}
+
+	// 	// TODO - Attempt to create the machine
+
+	// 	// // if the machine is a control plane added, update the load balancer configuration
+	// 	// if util.IsControlPlaneMachine(machine) {}
+
+	// 	// DEPLOY THE MACHINE
+	// 	//clusterDeploy(nil)
+
+	// 	providerID := fmt.Sprintf("plunder://%s", installMAC)
+
+	// 	plunderMachine.Spec.ProviderID = &providerID
+	// 	// Mark the inceptionMachine ready
+	// 	plunderMachine.Status.Ready = true
+	// 	// Set the object status
+	// 	plunderMachine.Status.MACAddress = installMAC
+	// 	plunderMachine.Status.IPAdress = d.ConfigHost.IPAddress
 
 	return ctrl.Result{}, nil
-
 }
 
-func (r *PlunderMachineReconciler) reconcileMachineDelete(client plunder.Client, logger logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
+func (r *PlunderMachineReconciler) reconcileMachineDelete(client *plunder.Client,
+	logger logr.Logger,
+	machine *clusterv1.Machine,
+	plunderMachine *infrav1.PlunderMachine,
+	cluster *clusterv1.Cluster,
+	plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
+
 	logger.Info(fmt.Sprintf("Deleting Machine %s", plunderMachine.Name))
 
-	u, c, err := apiserver.BuildEnvironmentFromConfig("plunderclient.yaml", "")
+	err := client.DeleteMachine(*plunderMachine.Spec.MACAddress)
+	// 	// If an error has been returned then handle the error gracefully and terminate
 	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	destroyMap := destroyCommand(plunderMachine.Status.IPAdress)
-
-	// Marshall the parlay submission (runs the uptime command)
-	b, err := json.Marshal(destroyMap)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Set Parlay API path and POST
-	ep, resp := apiserver.FindFunctionEndpoint(u, c, "parlay", http.MethodPost)
-	if resp.Error != "" || resp.FriendlyError != "" {
-		return ctrl.Result{}, fmt.Errorf(resp.FriendlyError)
-	}
-
-	u.Path = ep.Path
-	response, err := apiserver.ParsePlunderPost(u, c, b)
-	if err != nil {
-
-		return ctrl.Result{}, fmt.Errorf(response.Error)
-	}
-
-	// If an error has been returned then handle the error gracefully and terminate
-	if response.FriendlyError != "" || response.Error != "" {
 		// TODO - if this error occurs it's because the machine doesn't exist
 		plunderMachine.Finalizers = util.Filter(plunderMachine.Finalizers, infrav1.MachineFinalizer)
-		logger.Info(fmt.Sprintf("Removing Machine [%s] from config, it may need removing manually", plunderMachine.Name))
-		return ctrl.Result{}, fmt.Errorf(resp.FriendlyError)
-
-	}
-
-	// Set Parlay API path and POST
-	ep, resp = apiserver.FindFunctionEndpoint(u, c, "deploymentAddress", http.MethodDelete)
-	if resp.Error != "" {
-		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	}
-	u.Path = ep.Path + "/" + strings.Replace(plunderMachine.Status.IPAdress, ".", "-", -1)
-	response, err = apiserver.ParsePlunderDelete(u, c)
-	if err != nil {
+		logger.Info(fmt.Sprintf("Plunder failed to remove machine [%s], it may need removing manually", plunderMachine.Name))
 		return ctrl.Result{}, err
 	}
+	// 	u, c, err := apiserver.BuildEnvironmentFromConfig("plunderclient.yaml", "")
+	// 	if err != nil {
+	// 		return ctrl.Result{}, err
+	// 	}
 
-	// If an error has been returned then handle the error gracefully and terminate
-	if response.FriendlyError != "" || response.Error != "" {
-		return ctrl.Result{}, fmt.Errorf(resp.Error)
+	// 	destroyMap := destroyCommand(plunderMachine.Status.IPAdress)
 
-	}
+	// 	// Marshall the parlay submission (runs the uptime command)
+	// 	b, err := json.Marshal(destroyMap)
+	// 	if err != nil {
+	// 		return ctrl.Result{}, err
+	// 	}
+
+	// 	// Set Parlay API path and POST
+	// 	ep, resp := apiserver.FindFunctionEndpoint(u, c, "parlay", http.MethodPost)
+	// 	if resp.Error != "" || resp.FriendlyError != "" {
+	// 		return ctrl.Result{}, fmt.Errorf(resp.FriendlyError)
+	// 	}
+
+	// 	u.Path = ep.Path
+	// 	response, err := apiserver.ParsePlunderPost(u, c, b)
+	// 	if err != nil {
+
+	// 		return ctrl.Result{}, fmt.Errorf(response.Error)
+	// 	}
+
+	// 	// If an error has been returned then handle the error gracefully and terminate
+	// 	if response.FriendlyError != "" || response.Error != "" {
+	// 		// TODO - if this error occurs it's because the machine doesn't exist
+	// 		plunderMachine.Finalizers = util.Filter(plunderMachine.Finalizers, infrav1.MachineFinalizer)
+	// 		logger.Info(fmt.Sprintf("Removing Machine [%s] from config, it may need removing manually", plunderMachine.Name))
+	// 		return ctrl.Result{}, fmt.Errorf(resp.FriendlyError)
+
+	// 	}
+
+	// 	// Set Parlay API path and POST
+	// 	ep, resp = apiserver.FindFunctionEndpoint(u, c, "deploymentAddress", http.MethodDelete)
+	// 	if resp.Error != "" {
+	// 		return ctrl.Result{}, fmt.Errorf(resp.Error)
+
+	// 	}
+	// 	u.Path = ep.Path + "/" + strings.Replace(plunderMachine.Status.IPAdress, ".", "-", -1)
+	// 	response, err = apiserver.ParsePlunderDelete(u, c)
+	// 	if err != nil {
+	// 		return ctrl.Result{}, err
+	// 	}
+
+	// 	// If an error has been returned then handle the error gracefully and terminate
+	// 	if response.FriendlyError != "" || response.Error != "" {
+	// 		return ctrl.Result{}, fmt.Errorf(resp.Error)
+
+	// 	}
 
 	// Machine is deleted so remove the finalizer.
 	plunderMachine.Finalizers = util.Filter(plunderMachine.Finalizers, infrav1.MachineFinalizer)
