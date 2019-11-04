@@ -73,7 +73,7 @@ metadata:
 
 ### Machine Definition
 
-**IPAM** isn't completed (lol.. it's not started), so currently you'll need to specify addresses for machines. This will need fixing for `machineSets`
+**IPAM** isn't completed (lol.. it's not started), so currently you'll need to specify addresses for machines. Also a deployment type is required in order for Plunder to know what to provision. This will need fixing for `machineSets`
 
 Machine.yaml should looks something like below:
 
@@ -85,6 +85,7 @@ metadata:
   namespace: default
 spec:
   ipaddress: 192.168.1.123
+  deploymentType: preseed
 ---
 apiVersion: cluster.x-k8s.io/v1alpha2
 kind: Machine
@@ -111,6 +112,7 @@ metadata:
   namespace: default
 spec:
   ipaddress: 192.168.1.124
+  deploymentType: preseed
 ---
 apiVersion: cluster.x-k8s.io/v1alpha2
 kind: Machine
