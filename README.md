@@ -1,12 +1,12 @@
-# cluster-api-provider-plunder
+# cluster-api-plunder
 
-_Pronounced_: Clust**ARRRR**-**APIARRRR**-provider-plunder.
+_Pronounced_: Clust**ARRRR**-**APIARRRR**-plunder.
 
 **Warning**: This provider is so untested that I would only recommend using it against your worst enemies, that being said.. if you're feeling brave then be my guest :D
 
 ## What is it?
 
-The `cluster-api-provider-plunder` is a [Cluster-API](https://github.com/kubernetes-sigs/cluster-api) provider that extends the capabilities of a Kubernetes cluster so that it can be used to not only manage the provisioning of applications and services, but also the provisioning of actual infrastructure to host additional Kubernetes clusters. 
+The `cluster-api-plunder` is a [Cluster-API](https://github.com/kubernetes-sigs/cluster-api) provider that extends the capabilities of a Kubernetes cluster so that it can be used to not only manage the provisioning of applications and services, but also the provisioning of actual infrastructure to host additional Kubernetes clusters. 
 
 This provider does this by "translating" infrastructure requests from Cluster-API and using [plunder](https://github.com/plunder-app/plunder) to provision `clusters` and the required `machines` that make up a complete Kubernetes cluster.
 
