@@ -17,7 +17,7 @@ func (c *Client) ProvisionMachine(hostname, macAddress, ipAddress, deploymenType
 
 	// define the deployment configuration options
 	d := services.DeploymentConfig{
-		ConfigName: deploumenType,
+		ConfigName: deploymenType,
 		MAC:        macAddress,
 		ConfigHost: services.HostConfig{
 			IPAddress:  ipAddress,

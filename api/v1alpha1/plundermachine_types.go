@@ -46,6 +46,9 @@ type PlunderMachineSpec struct {
 
 	// MACAddress is the physical network address of the if we don't auto detect
 	MACAddress *string `json:"macaddress,omitempty"`
+
+	// DeploymentType defines what will be deployed on the new machine
+	DeploymentType *string `json:"deploymentType,omitempty"`
 }
 
 // PlunderMachineStatus defines the observed state of PlunderMachine
