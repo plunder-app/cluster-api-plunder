@@ -42,12 +42,14 @@ type PlunderMachineSpec struct {
 	// MACHINE Definition
 
 	// IPAdress is the address to be used IF IPAM isn't enabled (SPOILER IT ISN'T as i've not written it yet)
+	// +optional
 	IPAdress *string `json:"ipaddress,omitempty"`
-
 	// MACAddress is the physical network address of the if we don't auto detect
-	MACAddress *string `json:"macaddress,omitempty"`
+	// +optional
 
+	MACAddress *string `json:"macaddress,omitempty"`
 	// DeploymentType defines what will be deployed on the new machine
+	// +optional
 	DeploymentType *string `json:"deploymentType,omitempty"`
 }
 

@@ -234,6 +234,16 @@ github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/plunder-app/cluster-api-plunder v0.0.0-20191103114358-3413f694fd37 h1:XUr0xZy8+tSi865M57mRw+sxOv8V7PfZQfMmGF5cy8Y=
 github.com/plunder-app/plunder v0.4.5 h1:Q/hz5LDPFJeGzvB/6n992oS86LNEh2pFarXu3TSKDpM=
 github.com/plunder-app/plunder v0.4.5/go.mod h1:UwjxP9QxH9NLbolbRJgnD1YapwlBXTUEHhK/guH9jGk=
+github.com/plunder-app/plunder/pkg/apiserver v0.0.0-20191105152536-b5c505aaf830 h1:ITszNABPTTbfMUrxsRJJshYERb8nW4mYk2eurr0fqCY=
+github.com/plunder-app/plunder/pkg/apiserver v0.0.0-20191105152536-b5c505aaf830/go.mod h1:AOpM7jJWaWxa9smjmjetM/Z4zjgsdfw1YnpLnNz5bn8=
+github.com/plunder-app/plunder/pkg/parlay/parlaytypes v0.0.0-20191105152536-b5c505aaf830 h1:sbV3um7RoWCkSMCY0azjr5Dovv7Z9PnaozkWSpxFgG0=
+github.com/plunder-app/plunder/pkg/parlay/parlaytypes v0.0.0-20191105152536-b5c505aaf830/go.mod h1:QtxXmGRkwdtiiH03oveOPcYXucOv/FxJq2a170aXkxg=
+github.com/plunder-app/plunder/pkg/plunderlogging v0.0.0-20191105152536-b5c505aaf830 h1:UOi4zOCioCTVsBaUXOKjwE2Bn8uQHngORr2RfIYvG8k=
+github.com/plunder-app/plunder/pkg/plunderlogging v0.0.0-20191105152536-b5c505aaf830/go.mod h1:ketI5Vxh8nmxwiWnS644ZaEwVt9M/bpP6ISaFeWpcS0=
+github.com/plunder-app/plunder/pkg/services v0.0.0-20191105152536-b5c505aaf830 h1:El3Fx+v/M+UVWyczQWEVm8p4MgW10BU+cO2yfUZTa2Y=
+github.com/plunder-app/plunder/pkg/services v0.0.0-20191105152536-b5c505aaf830/go.mod h1:iBgJnYPhXMDczYk+SF5tCoVCOn5M8o4f28EBoAOn+tA=
+github.com/plunder-app/plunder/pkg/utils v0.0.0-20191105152536-b5c505aaf830 h1:oNiQZhrQVfMplfbHoun8DlFx54DKh4OosbzLXU9UclQ=
+github.com/plunder-app/plunder/pkg/utils v0.0.0-20191105152536-b5c505aaf830/go.mod h1:c8D83hu1Vz4Rz/f1rLHjhrOh3xRzga7r/o4+QyoeFTg=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pquerna/cachecontrol v0.0.0-20171018203845-0dec1b30a021/go.mod h1:prYjPmNq4d1NPVmpShWobRqXY3q7Vp+80DqgxxUrUIA=
