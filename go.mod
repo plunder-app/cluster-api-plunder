@@ -16,8 +16,7 @@ require (
 	github.com/krolaw/dhcp4 v0.0.0-20190909130307-a50d88189771 // indirect
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
-	//github.com/plunder-app/cluster-api-plunder v0.0.0-20191103114358-3413f694fd37
-	// 	github.com/plunder-app/plunder v0.4.5 // indirect
+	github.com/plunder-app/cluster-api-plunder/pkg/plunder v0.0.0-00010101000000-000000000000
 	github.com/plunder-app/plunder/pkg/apiserver v0.0.0-20191105152536-b5c505aaf830
 	github.com/plunder-app/plunder/pkg/parlay/parlaytypes v0.0.0-20191105152536-b5c505aaf830
 	github.com/plunder-app/plunder/pkg/plunderlogging v0.0.0-20191105152536-b5c505aaf830
@@ -39,8 +38,8 @@ require (
 )
 
 replace (
+	github.com/plunder-app/cluster-api-plunder/pkg/plunder => ./pkg/plunder
 	k8s.io/api => k8s.io/api v0.0.0-20190704095032-f4ca3d3bdf1d
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190704094733-8f6ac2502e51
 	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.0.0-20190829144357-1063658f9b58
-
 )
