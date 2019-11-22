@@ -51,9 +51,12 @@ type PlunderMachineSpec struct {
 	// MACHINE Definition
 
 	// IPAddress is the address to be used IF IPAM isn't enabled (SPOILER IT ISN'T as i've not written it yet)
-	IPAddress *string `json:"ipaddress,omitempty"`
-
+	// +optional
+  IPAddress *string `json:"ipaddress,omitempty"`
+  
 	// MACAddress is the physical network address of the if we don't auto detect
+	// +optional
+
 	MACAddress *string `json:"macaddress,omitempty"`
 
 	// DockerVersion is the version of the docker engine that will be installed

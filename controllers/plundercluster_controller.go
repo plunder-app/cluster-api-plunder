@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "github.com/plunder-app/cluster-api-provider-plunder/api/v1alpha1"
+	infrav1 "github.com/plunder-app/cluster-api-plunder/api/v1alpha1"
 )
 
 // PlunderClusterReconciler reconciles a PlunderCluster object

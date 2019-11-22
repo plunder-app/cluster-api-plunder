@@ -20,10 +20,10 @@ import (
 	"flag"
 	"os"
 
-	"github.com/plunder-app/cluster-api-provider-plunder/pkg/record"
+	"github.com/plunder-app/cluster-api-plunder/pkg/record"
 
-	infrastructurev1alpha1 "github.com/plunder-app/cluster-api-provider-plunder/api/v1alpha1"
-	"github.com/plunder-app/cluster-api-provider-plunder/controllers"
+	infrastructurev1alpha1 "github.com/plunder-app/cluster-api-plunder/api/v1alpha1"
+	"github.com/plunder-app/cluster-api-plunder/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
