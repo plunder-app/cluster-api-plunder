@@ -205,13 +205,18 @@ func (in *PlunderMachineSpec) DeepCopyInto(out *PlunderMachineSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.IPAdress != nil {
-		in, out := &in.IPAdress, &out.IPAdress
+	if in.IPAddress != nil {
+		in, out := &in.IPAddress, &out.IPAddress
 		*out = new(string)
 		**out = **in
 	}
 	if in.MACAddress != nil {
 		in, out := &in.MACAddress, &out.MACAddress
+		*out = new(string)
+		**out = **in
+	}
+	if in.DockerVersion != nil {
+		in, out := &in.DockerVersion, &out.DockerVersion
 		*out = new(string)
 		**out = **in
 	}

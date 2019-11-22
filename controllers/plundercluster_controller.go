@@ -41,6 +41,7 @@ type PlunderClusterReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=plunderclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 
+// Reconcile - This is called when a resource of plunderCluster is created/modified/delted
 func (r *PlunderClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rerr error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("plundercluster", req.NamespacedName)
@@ -91,6 +92,7 @@ func (r *PlunderClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 	return r.reconcileCluster(log, cluster, plunderCluster)
 }
 
+// SetupWithManager - will add the managment of resources of type PlunderCluster
 func (r *PlunderClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.PlunderCluster{}).

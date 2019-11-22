@@ -24,6 +24,15 @@ const (
 	// MachineFinalizer allows the reconciler to clean up resources associated with PlunderMachine before
 	// removing it from the apiserver.
 	MachineFinalizer = "plundernmachine.infrastructure.cluster.x-k8s.io"
+
+	// DockerVersionDefault is the version of Docker that the provider will default to
+	DockerVersionDefault = "18.06.1~ce~3-0~ubuntu"
+
+	// KubernetesVersionDefault is the version of Docker that the provider will default to
+	KubernetesVersionDefault = "v1.15.1"
+
+	// DeploymentDefault is the default type of installation
+	DeploymentDefault = "preseed"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -41,13 +50,18 @@ type PlunderMachineSpec struct {
 
 	// MACHINE Definition
 
-	// IPAdress is the address to be used IF IPAM isn't enabled (SPOILER IT ISN'T as i've not written it yet)
+	// IPAddress is the address to be used IF IPAM isn't enabled (SPOILER IT ISN'T as i've not written it yet)
 	// +optional
-	IPAdress *string `json:"ipaddress,omitempty"`
+  IPAddress *string `json:"ipaddress,omitempty"`
+  
 	// MACAddress is the physical network address of the if we don't auto detect
 	// +optional
 
 	MACAddress *string `json:"macaddress,omitempty"`
+
+	// DockerVersion is the version of the docker engine that will be installed
+	DockerVersion *string `json:"dockerVersion,omitempty"`
+
 	// DeploymentType defines what will be deployed on the new machine
 	// +optional
 	DeploymentType *string `json:"deploymentType,omitempty"`
