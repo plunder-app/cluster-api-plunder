@@ -36,6 +36,10 @@ spec:
               items:
                 type: string
               type: array
+            deploymentType:
+              description: DeploymentType defines what will be deployed on the new
+                machine
+              type: string
             dockerVersion:
               description: DockerVersion is the version of the docker engine that
                 will be installed

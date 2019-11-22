@@ -30,6 +30,9 @@ const (
 
 	// KubernetesVersionDefault is the version of Docker that the provider will default to
 	KubernetesVersionDefault = "v1.15.1"
+
+	// DeploymentDefault is the default type of installation
+	DeploymentDefault = "preseed"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -55,6 +58,10 @@ type PlunderMachineSpec struct {
 
 	// DockerVersion is the version of the docker engine that will be installed
 	DockerVersion *string `json:"dockerVersion,omitempty"`
+
+	// DeploymentType defines what will be deployed on the new machine
+	// +optional
+	DeploymentType *string `json:"deploymentType,omitempty"`
 }
 
 // PlunderMachineStatus defines the observed state of PlunderMachine

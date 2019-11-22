@@ -38,7 +38,7 @@ type PlunderClusterSpec struct {
 	StaticMAC string `json:"staticMAC,omitempty"`
 
 	// StaticIp denotes that the machine is ready
-	StaticIp string `json:"staticIP,omitempty"`
+	StaticIP string `json:"staticIP,omitempty"`
 }
 
 // PlunderClusterStatus defines the observed state of PlunderCluster

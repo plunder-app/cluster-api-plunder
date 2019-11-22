@@ -165,36 +165,6 @@ func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *cl
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	// ep, resp := apiserver.FindFunctionEndpoint(u, c, "dhcp", http.MethodGet)
-	// if resp.Error != "" {
-	// 	return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	// }
-
-	// u.Path = path.Join(u.Path, ep.Path+"/unleased")
-
-	// response, err := apiserver.ParsePlunderGet(u, c)
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
-	// // If an error has been returned then handle the error gracefully and terminate
-	// if response.FriendlyError != "" || response.Error != "" {
-	// 	return ctrl.Result{}, err
-	// }
-	// var unleased []services.Lease
-
-	// err = json.Unmarshal(response.Payload, &unleased)
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
-
-	// // Iterate through all known addresses and find a free one that looks "recent"
-	// for i := range unleased {
-	// 	if time.Since(unleased[i].Expiry).Minutes() < 10 {
-	// 		installMAC = unleased[i].MAC
-	// 	}
-	// }
-
 	installMAC, err = findUnleasedServer(u, c)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -207,12 +177,20 @@ func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *cl
 
 	log.Info(fmt.Sprintf("Found Hardware %s", installMAC))
 
+	// If the deployment type is left blank then we default to the provider default
+	if plunderMachine.Spec.DeploymentType == nil {
+		deploymentType := infrav1.DeploymentDefault
+		plunderMachine.Spec.DeploymentType = &deploymentType
+	}
+
+	// Build the plunder deployment configuration
 	d := services.DeploymentConfig{
-		ConfigName: "preseed",
+		ConfigName: *plunderMachine.Spec.DeploymentType,
 		MAC:        installMAC,
 		ConfigHost: services.HostConfig{},
 	}
 
+	// If the IP address is blank we (error for now)
 	if plunderMachine.Spec.IPAddress != nil {
 		d.ConfigHost.IPAddress = *plunderMachine.Spec.IPAddress
 	} else {
@@ -240,23 +218,6 @@ func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *cl
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	// ep, resp := apiserver.FindFunctionEndpoint(u, c, "deployment", http.MethodPost)
-	// if resp.Error != "" {
-	// 	return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	// }
-
-	// u.Path = ep.Path
-
-	// response, err := apiserver.ParsePlunderPost(u, c, b)
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
-	// // If an error has been returned then handle the error gracefully and terminate
-	// if response.FriendlyError != "" || response.Error != "" {
-	// 	return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	// }
 
 	newMap := uptimeCommand(d.ConfigHost.IPAddress)
 
@@ -280,78 +241,8 @@ func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *cl
 	r.Recorder.Eventf(plunderMachine, corev1.EventTypeNormal, "PlunderProvision", provisioningResult)
 	log.Info(provisioningResult)
 
-	// for {
-	// 	// Set Parlay API path and POST
-	// 	ep, resp = apiserver.FindFunctionEndpoint(u, c, "parlay", http.MethodPost)
-	// 	if resp.Error != "" {
-	// 		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	// 	}
-	// 	u.Path = ep.Path
-
-	// 	response, err := apiserver.ParsePlunderPost(u, c, b)
-	// 	if err != nil {
-	// 		return ctrl.Result{}, err
-	// 	}
-
-	// 	// If an error has been returned then handle the error gracefully and terminate
-	// 	if response.FriendlyError != "" || response.Error != "" {
-	// 		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	// 	}
-
-	// 	// Sleep for five seconds
-	// 	time.Sleep(5 * time.Second)
-
-	// 	// Set the parlay API get logs path and GET
-	// 	ep, resp = apiserver.FindFunctionEndpoint(u, c, "parlayLog", http.MethodGet)
-	// 	if resp.Error != "" {
-	// 		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	// 	}
-	// 	u.Path = ep.Path + "/" + dashAddress
-
-	// 	response, err = apiserver.ParsePlunderGet(u, c)
-	// 	if err != nil {
-	// 		return ctrl.Result{}, err
-	// 	}
-	// 	// If an error has been returned then handle the error gracefully and terminate
-	// 	if response.FriendlyError != "" || response.Error != "" {
-	// 		return ctrl.Result{}, fmt.Errorf(resp.Error)
-
-	// 	}
-
-	// 	var logs plunderlogging.JSONLog
-
-	// 	err = json.Unmarshal(response.Payload, &logs)
-	// 	if err != nil {
-	// 		return ctrl.Result{}, err
-	// 	}
-
-	// 	if logs.State == "Completed" {
-	// 		provisioningResult := fmt.Sprintf("Host has been succesfully provisioned OS in %s Seconds\n", time.Since(t).Round(time.Second))
-	// 		r.Recorder.Eventf(plunderMachine, corev1.EventTypeNormal, "PlunderProvision", provisioningResult)
-
-	// 		log.Info(provisioningResult)
-	// 		break
-	// 	}
-	//}
-
 	var kubeMap parlaytypes.TreasureMap
 
-	// Check if a version of Docker is defined, if not fall back to the default
-	// if plunderMachine.Spec.DockerVersion != nil {
-	// 	kubeMap = kubeCreateHostCommand(*plunderMachine.Spec.IPAddress, *machine.Spec.Version, *plunderMachine.Spec.DockerVersion)
-	// } else {
-	// 	kubeMap = kubeCreateHostCommand(*plunderMachine.Spec.IPAddress, *machine.Spec.Version, infrav1.DockerVersionDefault)
-	// }
-
-	// // Check if a version of Docker is defined, if not fall back to the default
-	// if machine.Spec.Version != nil {
-	// 	kubeMap = kubeCreateHostCommand(*plunderMachine.Spec.IPAddress, *machine.Spec.Version, *machine.Spec.Version)
-	// } else {
-	// 	kubeMap = kubeCreateHostCommand(*plunderMachine.Spec.IPAddress, *machine.Spec.Version, infrav1.DockerVersionDefault)
-	// }
 	if plunderMachine.Spec.DockerVersion == nil {
 		ver := infrav1.DockerVersionDefault
 		plunderMachine.Spec.DockerVersion = &ver
