@@ -36,8 +36,12 @@ spec:
               items:
                 type: string
               type: array
+            dockerVersion:
+              description: DockerVersion is the version of the docker engine that
+                will be installed
+              type: string
             ipaddress:
-              description: IPAdress is the address to be used IF IPAM isn't enabled
+              description: IPAddress is the address to be used IF IPAM isn't enabled
                 (SPOILER IT ISN'T as i've not written it yet)
               type: string
             macaddress:
