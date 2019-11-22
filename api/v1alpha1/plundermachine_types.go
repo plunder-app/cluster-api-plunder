@@ -52,8 +52,8 @@ type PlunderMachineSpec struct {
 
 	// IPAddress is the address to be used IF IPAM isn't enabled (SPOILER IT ISN'T as i've not written it yet)
 	// +optional
-  IPAddress *string `json:"ipaddress,omitempty"`
-  
+	IPAddress *string `json:"ipaddress,omitempty"`
+
 	// MACAddress is the physical network address of the if we don't auto detect
 	// +optional
 

@@ -1,12 +1,9 @@
 /*
 Copyright 2019 The Kubernetes Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,15 +15,13 @@ package controllers
 
 import (
 	"context"
-  "encoding/json"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
-
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -36,11 +31,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "github.com/plunder-app/cluster-api-provider-plunder/api/v1alpha1"
+	infrav1 "github.com/plunder-app/cluster-api-plunder/api/v1alpha1"
 	"github.com/plunder-app/plunder/pkg/apiserver"
 	"github.com/plunder-app/plunder/pkg/parlay/parlaytypes"
 	"github.com/plunder-app/plunder/pkg/services"
-
 )
 
 // PlunderMachineReconciler reconciles a PlunderMachine object
@@ -62,19 +56,10 @@ func (r *PlunderMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 
 	// your Plunder Machine logic begins here
 
-	// Attempt to speak with the provisioning (plunder) server
-	// TODO - may need moving lower
-	client, err := plunder.NewClient()
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// We can speak with the plunder server, we can now evaluate the changes
-
-	// Fetch the plunderMachine instance.
+	// Fetch the inceptionmachine instance.
 	plunderMachine := &infrav1.PlunderMachine{}
 
-	err = r.Get(ctx, req.NamespacedName, plunderMachine)
+	err := r.Get(ctx, req.NamespacedName, plunderMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -135,11 +120,11 @@ func (r *PlunderMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 
 	// Handle deleted clusters
 	if !plunderMachine.DeletionTimestamp.IsZero() {
-		return r.reconcileMachineDelete(client, log, machine, plunderMachine, cluster, plunderCluster)
+		return r.reconcileMachineDelete(log, machine, plunderMachine, cluster, plunderCluster)
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcileMachine(client, log, machine, plunderMachine, cluster, plunderCluster)
+	return r.reconcileMachine(log, machine, plunderMachine, cluster, plunderCluster)
 }
 
 // SetupWithManager - will add the managment of resources of type PlunderMachine
@@ -149,7 +134,7 @@ func (r *PlunderMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
+func (r *PlunderMachineReconciler) reconcileMachine(log logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
 	log.Info("Reconciling Machine")
 	// If the DockerMachine doesn't have finalizer, add it.
 	if !util.Contains(plunderMachine.Finalizers, infrav1.MachineFinalizer) {
@@ -159,6 +144,7 @@ func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log 
 	// if the machine is already provisioned, return
 	if plunderMachine.Spec.ProviderID != nil {
 		plunderMachine.Status.Ready = true
+
 		return ctrl.Result{}, nil
 	}
 
@@ -210,10 +196,10 @@ func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log 
 	}
 
 	//Check the role of the machine
-
 	if util.IsControlPlaneMachine(machine) {
 		log.Info(fmt.Sprintf("Provisioning Control plane node %s", machine.Name))
-    d.ConfigHost.ServerName = fmt.Sprintf("controlplane-%s", StringWithCharset(5, charset))
+		d.ConfigHost.ServerName = fmt.Sprintf("controlplane-%s", StringWithCharset(5, charset))
+
 	} else {
 		log.Info(fmt.Sprintf("Provisioning Worker node %s", machine.Name))
 		d.ConfigHost.ServerName = fmt.Sprintf("worker-%s", StringWithCharset(5, charset))
@@ -234,9 +220,7 @@ func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log 
 
 	// Marshall the parlay submission (runs the uptime command)
 	b, err = json.Marshal(newMap)
-
 	if err != nil {
-		r.Recorder.Eventf(plunderMachine, corev1.EventTypeWarning, "PlunderProvision", "Plunder failed to deploy")
 		return ctrl.Result{}, err
 	}
 
@@ -307,13 +291,14 @@ func (r *PlunderMachineReconciler) reconcileMachine(client *plunder.Client, log 
 	providerID := fmt.Sprintf("plunder://%s", installMAC)
 
 	plunderMachine.Spec.ProviderID = &providerID
-	// Mark the plunderMachine ready
+	// Mark the inceptionMachine ready
 	plunderMachine.Status.Ready = true
 	// Set the object status
-	plunderMachine.Status.MACAddress = *plunderMachine.Spec.MACAddress
-	plunderMachine.Status.IPAdress = *plunderMachine.Spec.IPAdress
+	plunderMachine.Status.MACAddress = installMAC
+	plunderMachine.Status.IPAdress = d.ConfigHost.IPAddress
 
 	return ctrl.Result{}, nil
+
 }
 
 func (r *PlunderMachineReconciler) reconcileMachineDelete(logger logr.Logger, machine *clusterv1.Machine, plunderMachine *infrav1.PlunderMachine, cluster *clusterv1.Cluster, plunderCluster *infrav1.PlunderCluster) (_ ctrl.Result, reterr error) {
@@ -338,12 +323,17 @@ func (r *PlunderMachineReconciler) reconcileMachineDelete(logger logr.Logger, ma
 	ep, resp := apiserver.FindFunctionEndpoint(u, c, "parlay", http.MethodPost)
 	if resp.Error != "" || resp.FriendlyError != "" {
 		return ctrl.Result{}, fmt.Errorf(resp.FriendlyError)
-
 	}
 
-	err := client.DeleteMachine(*plunderMachine.Spec.IPAdress)
-	// 	// If an error has been returned then handle the error gracefully and terminate
+	u.Path = ep.Path
+	response, err := apiserver.ParsePlunderPost(u, c, b)
 	if err != nil {
+
+		return ctrl.Result{}, fmt.Errorf(response.Error)
+	}
+
+	// If an error has been returned then handle the error gracefully and terminate
+	if response.FriendlyError != "" || response.Error != "" {
 		// TODO - if this error occurs it's because the machine doesn't exist
 		plunderMachine.Finalizers = util.Filter(plunderMachine.Finalizers, infrav1.MachineFinalizer)
 		logger.Info(fmt.Sprintf("Removing Machine [%s] from config, it may need removing manually", plunderMachine.Name))
@@ -363,6 +353,12 @@ func (r *PlunderMachineReconciler) reconcileMachineDelete(logger logr.Logger, ma
 	response, err = apiserver.ParsePlunderDelete(u, c)
 	if err != nil {
 		return ctrl.Result{}, err
+	}
+
+	// If an error has been returned then handle the error gracefully and terminate
+	if response.FriendlyError != "" || response.Error != "" {
+		return ctrl.Result{}, fmt.Errorf(resp.Error)
+
 	}
 
 	// Machine is deleted so remove the finalizer.
