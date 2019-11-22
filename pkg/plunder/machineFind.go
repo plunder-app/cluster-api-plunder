@@ -39,7 +39,7 @@ func (c *Client) FindMachine() (macAddress string, err error) {
 	// Iterate through all known addresses and find a free one that looks "recent"
 	for i := range unleased {
 		if time.Since(unleased[i].Expiry).Minutes() < 10 {
-			macAddress = unleased[i].Nic
+			macAddress = unleased[i].MAC
 		}
 	}
 

@@ -17,11 +17,11 @@ require (
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/plunder-app/cluster-api-plunder/pkg/plunder v0.0.0-00010101000000-000000000000
-	github.com/plunder-app/plunder/pkg/apiserver v0.0.0-20191105152536-b5c505aaf830
-	github.com/plunder-app/plunder/pkg/parlay/parlaytypes v0.0.0-20191105152536-b5c505aaf830
-	github.com/plunder-app/plunder/pkg/plunderlogging v0.0.0-20191105152536-b5c505aaf830
-	github.com/plunder-app/plunder/pkg/services v0.0.0-20191105152536-b5c505aaf830
-	github.com/plunder-app/plunder/pkg/utils v0.0.0-20191105152536-b5c505aaf830
+	github.com/plunder-app/plunder/pkg/apiserver v0.0.0-20191118091643-d77ace9b9395
+	github.com/plunder-app/plunder/pkg/parlay/parlaytypes v0.0.0-20191118091643-d77ace9b9395
+	github.com/plunder-app/plunder/pkg/plunderlogging v0.0.0-20191118091643-d77ace9b9395
+	github.com/plunder-app/plunder/pkg/services v0.0.0-20191118091643-d77ace9b9395
+	github.com/plunder-app/plunder/pkg/utils v0.0.0-20191118091643-d77ace9b9395 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/thebsdbox/go-tftp v0.0.0-20190329154032-a7263f18c49c // indirect
