@@ -72,7 +72,7 @@ Copy the `plunderclient.yaml` file to the same location that the controller will
 
 ### Cluster Definition
 
-Cluster.yaml should typically look like below (the `cidrBlocks` are unimplemented from my side currently).
+Cluster.yaml should typically look like below the `cidrBlocks` will define the range of addresses used by pods started within the cluster.
 
 ```
 apiVersion: cluster.x-k8s.io/v1alpha2
@@ -96,7 +96,12 @@ metadata:
 
 ### Machine Definition
 
-**IPAM** isn't completed (lol.. it's not started), so currently you'll need to specify addresses for machines. Also a deployment type is required in order for Plunder to know what to provision. This will need fixing for `machineSets`
+**IPAM** isn't completed (lol.. it's not started), so currently you'll need to specify addresses for machines, this will need fixing for `machineSets`
+
+Also:
+
+- In `plunderMachine.spec` => `deploymentType` is required in order for Plunder to know what to provision.
+- In `machine.spec` => `version` is required to determine the version of Kubernetes to provision.
 
 Machine.yaml should looks something like below:
 
