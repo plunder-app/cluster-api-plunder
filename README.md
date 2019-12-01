@@ -33,22 +33,34 @@ When it comes to provisioning, we simply flip a server from `reboot` to `provisi
 
 At the moment, there is still a few steps that are needed to get this all up and running and i've yet to get the provider in a kubernetes deployment (someone feel free to raise an issue). 
 
+### Add Plunder Client Certificate
+
+Add the seret that will contain the plunder config, the `--from-file` should point to the location of the client certificate.
+
+```
+k create secret generic plunder --from-file=./plunderclient.yaml --namespace=capi-system
+```
+
 ### Install CRDs
 
-To use the created ones `kubectl apply -f https://github.com/plunder-app/cluster-api-plunder/raw/master/config/crd/bases/infrastructure.cluster.x-k8s.io_plunderclusters.yaml` and `kubectl apply -f https://github.com/plunder-app/cluster-api-plunder/raw/master/config/crd/bases/infrastructure.cluster.x-k8s.io_plundermachines.yaml`
+To use the created ones:
 
-`make install`
+```
+kubectl apply -f https://github.com/plunder-app/cluster-api-plunder/raw/master/cluster-api-plunder-components.yaml
+```
+
+To generate them within the source code / project:
+
+```
+make install
+```
 
 Then verify them with `kubectl get crds | grep plunder`. 
 
 
 ### Install/Run Controller
 
-Add the seret that will contain the plunder config as shown below:
-`k create secret generic plunder --from-file=./plunderclient.yaml --namespace=capi-system`
-
-Then import the manifest for running the controller as a kubernetes deployment:
-`k create -f https://github.com/plunder-app/cluster-api-plunder/raw/master/examples/controller.yaml`
+If you are using the manifest that is part of this repository and have created the certificate, then the controller should be up and running as expected. 
 
 Alternatively you can build/run the controller locally as detailed below
 
