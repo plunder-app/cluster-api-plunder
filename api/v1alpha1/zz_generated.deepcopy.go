@@ -70,7 +70,7 @@ func (in *PlunderCluster) DeepCopyObject() runtime.Object {
 func (in *PlunderClusterList) DeepCopyInto(out *PlunderClusterList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]PlunderCluster, len(*in))
@@ -164,7 +164,7 @@ func (in *PlunderMachine) DeepCopyObject() runtime.Object {
 func (in *PlunderMachineList) DeepCopyInto(out *PlunderMachineList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]PlunderMachine, len(*in))

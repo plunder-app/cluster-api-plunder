@@ -125,8 +125,6 @@ spec:
                 (SPOILER IT ISN'T as i've not written it yet)
               type: string
             macaddress:
-              description: MACAddress is the physical network address of the if we
-                don't auto detect
               type: string
             providerID:
               description: 'ProviderID will be the only detail (todo: something else)'
@@ -141,10 +139,14 @@ spec:
             macaddress:
               description: MACAddress is the physical network address of the machine
               type: string
+            machineName:
+              description: MachineName is the generated name for the provisioned name
+              type: string
             ready:
               description: Ready denotes that the machine is ready
               type: boolean
           required:
+          - machineName
           - ready
           type: object
       type: object
@@ -180,14 +182,12 @@ spec:
       - args:
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
-        image: thebsdbox/capp:v0.1
+        image: thebsdbox/capp:v0.1.1
         name: manager
         volumeMounts:
         - name: plunderyaml
           mountPath: "/plunderclient.yaml"
           subPath: "plunderclient.yaml"
-        securityContext:
-          privileged: true
       terminationGracePeriodSeconds: 10
       volumes:
       - name: plunderyaml
