@@ -2,6 +2,7 @@ package plunder
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/plunder-app/plunder/pkg/parlay/parlaytypes"
 )
@@ -10,7 +11,7 @@ func uptimeCommand(host string) parlaytypes.TreasureMap {
 	return parlaytypes.TreasureMap{
 		Deployments: []parlaytypes.Deployment{
 			parlaytypes.Deployment{
-				Name:     "Cluster-API provisioning",
+				Name:     "Cluster-API OS Provisioned test",
 				Parallel: false,
 				Hosts:    []string{host},
 				Actions: []parlaytypes.Action{
@@ -60,11 +61,15 @@ func destroyCommand(host string) parlaytypes.TreasureMap {
 	}
 }
 
-func kubeCreateHostCommand(host string) parlaytypes.TreasureMap {
-	return parlaytypes.TreasureMap{
+// ActionsKubernetes - this will take the inputs and generate all of the deployment details needed to install a version of Kubernetes / Docker
+func (c *Client) ActionsKubernetes(host, kubeVersion, dockerVersion string) {
+
+	// The Kubernetes standard is to define versions such as v1.x.x, however the OS packages are 1.x.x (missing the "v")
+	kubeVersionFix := strings.Replace(kubeVersion, "v", "", -1)
+	c.deploymentMap = &parlaytypes.TreasureMap{
 		Deployments: []parlaytypes.Deployment{
 			parlaytypes.Deployment{
-				Name:     "Cluster-API provisioning",
+				Name:     "Cluster-API OS Package provisioning",
 				Parallel: false,
 				Hosts:    []string{host},
 				Actions: []parlaytypes.Action{
@@ -81,7 +86,7 @@ func kubeCreateHostCommand(host string) parlaytypes.TreasureMap {
 						Command:       "sudo apt-get update",
 						Name:          "Cluster-API provisioning [Ubuntu package update]",
 						CommandSudo:   "root",
-						IgnoreFailure: true,
+						IgnoreFailure: false, //THIS IS INHERITED
 					},
 					parlaytypes.Action{
 						ActionType:  "command",
@@ -124,8 +129,8 @@ func kubeCreateHostCommand(host string) parlaytypes.TreasureMap {
 					},
 					parlaytypes.Action{
 						ActionType:  "command",
-						Command:     "apt-get install -y docker-ce=18.06.1~ce~3-0~ubuntu kubelet=1.14.1-00 kubeadm=1.14.1-00 kubectl=1.14.1-00 kubernetes-cni cri-tools",
-						Name:        "Cluster-API provisioning [install Kubernetes (1.14.1) packages]",
+						Command:     fmt.Sprintf("apt-get install -y docker-ce=%s kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni cri-tools", dockerVersion, kubeVersionFix, kubeVersionFix, kubeVersionFix),
+						Name:        fmt.Sprintf("Cluster-API provisioning [install Kubernetes (%s) packages]", kubeVersion),
 						CommandSudo: "root",
 					},
 					parlaytypes.Action{
@@ -140,12 +145,17 @@ func kubeCreateHostCommand(host string) parlaytypes.TreasureMap {
 	}
 }
 
-func kubeadmActions(version, podCidr string) []parlaytypes.Action {
-	return []parlaytypes.Action{
+// ActionsControlPlane will add the additional deployment actions for building the deployment plane for Kubernetes
+func (c *Client) ActionsControlPlane(kubeversion, cidr string) error {
+	if c.deploymentMap == nil {
+		return fmt.Errorf("The Kubernetes deployment couldn't be found, can't apply Control plane creation commands")
+	}
+	// Generate the control plane actions
+	cp := []parlaytypes.Action{
 		parlaytypes.Action{
 			ActionType:  "command",
-			Command:     fmt.Sprintf("kubeadm init --kubernetes-version \"%s\" --pod-network-cidr=%s", version, podCidr),
-			Name:        fmt.Sprintf("Cluster-API provisioning [Initialise Kubernetes %s Cluster]", version),
+			Command:     fmt.Sprintf("kubeadm init --kubernetes-version \"%s\" --pod-network-cidr=%s", kubeversion, cidr),
+			Name:        fmt.Sprintf("Cluster-API provisioning [Initialise Kubernetes %s Cluster]", kubeversion),
 			CommandSudo: "root",
 		},
 		parlaytypes.Action{
@@ -153,6 +163,48 @@ func kubeadmActions(version, podCidr string) []parlaytypes.Action {
 			Command:     "rm -rf ~/.kube ; mkdir -p ~/.kube ; sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config ; sudo chown $(id -u):$(id -g) $HOME/.kube/config",
 			Name:        "Cluster-API provisioning [Set kubeconfig]",
 			CommandSudo: "root",
+		},
+		parlaytypes.Action{
+			ActionType:       "command",
+			Command:          "kubeadm token create --print-join-command 2>/dev/null",
+			Name:             "Generate a join token for workers",
+			CommandSaveAsKey: "joinToken",
+			CommandSudo:      "root",
+		},
+	}
+	// Add to the deployment actions
+	c.deploymentMap.Deployments[0].Actions = append(c.deploymentMap.Deployments[0].Actions, cp...)
+	return nil
+}
+
+// ActionsWorker will add the additional deployment actions for adding a worker to an existing cluster
+func (c *Client) ActionsWorker() error {
+	if c.deploymentMap == nil {
+		return fmt.Errorf("The Kubernetes deployment couldn't be found, can't apply Control plane creation commands")
+	}
+	// Generate the worker actions
+	wrkr := []parlaytypes.Action{
+		parlaytypes.Action{
+			ActionType:  "command",
+			KeyName:     "joinToken",
+			Name:        "Join Worker to cluster",
+			CommandSudo: "root",
+		},
+	}
+	// Add to the deployment actions
+	c.deploymentMap.Deployments[0].Actions = append(c.deploymentMap.Deployments[0].Actions, wrkr...)
+	return nil
+}
+
+// TODO - will be needed if a worker needs a token after the main one has expired
+func createKubeToken() []parlaytypes.Action {
+	return []parlaytypes.Action{
+		parlaytypes.Action{
+			ActionType:       "command",
+			Command:          "kubeadm token create --print-join-command 2>/dev/null",
+			Name:             "Generate a join token for workers",
+			CommandSaveAsKey: "joinToken",
+			CommandSudo:      "root",
 		},
 	}
 }

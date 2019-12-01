@@ -25,22 +25,6 @@ func (c *Client) ProvisionMachine(hostname, macAddress, ipAddress, deploymenType
 		},
 	}
 
-	// if plunderMachine.Spec.IPAdress != nil {
-	// 	d.ConfigHost.IPAddress = *plunderMachine.Spec.IPAdress
-	// } else {
-	// 	// TODO (EPIC) implement IPAM
-	// }
-
-	//Check the role of the machine
-	// if util.IsControlPlaneMachine(machine) {
-	// 	log.Info(fmt.Sprintf("Provisioning Control plane node %s", machine.Name))
-	// 	d.ConfigHost.ServerName = fmt.Sprintf("controlplane-%s", StringWithCharset(5, charset))
-
-	// } else {
-	// 	log.Info(fmt.Sprintf("Provisioning Worker node %s", machine.Name))
-	// 	d.ConfigHost.ServerName = fmt.Sprintf("worker-%s", StringWithCharset(5, charset))
-	// }
-
 	ep, resp := apiserver.FindFunctionEndpoint(c.address, c.server, "deployment", http.MethodPost)
 	if resp.Error != "" {
 		return fmt.Errorf(resp.Error)
@@ -81,7 +65,6 @@ func (c *Client) ProvisionMachineWait(ipAddress string) (result *string, err err
 
 	// Get the time
 	t := time.Now()
-	//r.Recorder.Eventf(plunderMachine, corev1.EventTypeNormal, "PlunderProvision", "Plunder has begun provisioning the Operating System")
 
 	for {
 		// Set Parlay API path and POST
@@ -138,5 +121,79 @@ func (c *Client) ProvisionMachineWait(ipAddress string) (result *string, err err
 			return &provisioningResult, nil
 		}
 	}
-	//return nil, fmt.Errorf("TODO - this should never happen")
+}
+
+// ProvisionKubernetes = will handle all of the tasks associated with deploying Kubernetes
+func (c *Client) ProvisionKubernetes() (result *string, err error) {
+
+	// Marshall the parlay submission (runs the uptime command)
+	b, err := json.Marshal(c.deploymentMap)
+	if err != nil {
+		return
+	}
+
+	// Get the time
+	t := time.Now()
+	// Set Parlay API path and POST
+	ep, resp := apiserver.FindFunctionEndpoint(c.address, c.server, "parlay", http.MethodPost)
+	if resp.Error != "" {
+		return nil, fmt.Errorf(resp.Error)
+
+	}
+	c.address.Path = ep.Path
+
+	response, err := apiserver.ParsePlunderPost(c.address, c.server, b)
+	if err != nil {
+		return nil, err
+	}
+
+	// If an error has been returned then handle the error gracefully and terminate
+	if response.FriendlyError != "" || response.Error != "" {
+		return result, fmt.Errorf(resp.Error)
+
+	}
+	// Create the string that will be used to get the logs
+	dashAddress := strings.Replace(c.deploymentMap.Deployments[0].Hosts[0], ".", "-", -1)
+
+	for {
+		// Sleep for five seconds
+		time.Sleep(5 * time.Second)
+		// Set the parlay API get logs path and GET
+		ep, resp = apiserver.FindFunctionEndpoint(c.address, c.server, "parlayLog", http.MethodGet)
+		if resp.Error != "" {
+			return nil, fmt.Errorf(resp.Error)
+
+		}
+		c.address.Path = ep.Path + "/" + dashAddress
+
+		response, err = apiserver.ParsePlunderGet(c.address, c.server)
+		if err != nil {
+			return nil, err
+		}
+		// If an error has been returned then handle the error gracefully and terminate
+		if response.FriendlyError != "" || response.Error != "" {
+			return nil, fmt.Errorf(resp.Error)
+
+		}
+
+		var logs plunderlogging.JSONLog
+
+		err = json.Unmarshal(response.Payload, &logs)
+		if err != nil {
+			return result, err
+		}
+
+		if logs.State == "Completed" {
+			// Report completion message
+			provisioningResult := fmt.Sprintf("Task has been succesfully completed in %s Seconds\n", time.Since(t).Round(time.Second))
+			result = &provisioningResult
+			break
+		} else if logs.State == "Failed" {
+			// Report error message
+			provisioningResult := fmt.Sprintf("Task has been failed after in %s Seconds\n", time.Since(t).Round(time.Second))
+			result = &provisioningResult
+			break
+		}
+	}
+	return
 }
