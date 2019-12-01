@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VERSION=v0.1.1
+
 echo "This is a terrible way for building the controller, but feel free to come up with something nicer"
 
 cd ../..
@@ -33,7 +35,7 @@ spec:
       - args:
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
-        image: thebsdbox/capp:v0.1
+        image: thebsdbox/capp:$VERSION
         name: manager
         volumeMounts:
         - name: plunderyaml
@@ -50,8 +52,8 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o hack/dockerB
 
 cd -
 
-docker build -t thebsdbox/capp:v0.1 .
-docker push thebsdbox/capp:v0.1
+docker build -t thebsdbox/capp:$VERSION .
+docker push thebsdbox/capp:$VERSION
 
 echo "Tidying up working directory, then inspect the docker images"
 rm manager
