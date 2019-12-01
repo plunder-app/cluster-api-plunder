@@ -63,10 +63,14 @@ spec:
             macaddress:
               description: MACAddress is the physical network address of the machine
               type: string
+            machineName:
+              description: MachineName is the generated name for the provisioned name
+              type: string
             ready:
               description: Ready denotes that the machine is ready
               type: boolean
           required:
+          - machineName
           - ready
           type: object
       type: object

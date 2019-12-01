@@ -5,12 +5,14 @@ import (
 	"net/url"
 
 	"github.com/plunder-app/plunder/pkg/apiserver"
+	"github.com/plunder-app/plunder/pkg/parlay/parlaytypes"
 )
 
 // Client defines all the components needed to interact with Plunder
 type Client struct {
-	address *url.URL
-	server  *http.Client
+	address       *url.URL
+	server        *http.Client
+	deploymentMap *parlaytypes.TreasureMap
 }
 
 // NewClient -  a  this will attempt to create a new client for interacting with Plunder

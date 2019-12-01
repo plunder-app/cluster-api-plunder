@@ -74,8 +74,12 @@ type PlunderMachineStatus struct {
 
 	// IPAdress is the allocated networking address
 	IPAdress string `json:"ipaddress,omitempty"`
+
 	// MACAddress is the physical network address of the machine
 	MACAddress string `json:"macaddress,omitempty"`
+
+	// MachineName is the generated name for the provisioned name
+	MachineName string `json:"machineName"`
 }
 
 // +kubebuilder:object:root=true
